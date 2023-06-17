@@ -36,11 +36,9 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser,PermissionsMixin):
     email = models.EmailField(verbose_name='Email', max_length=255, unique=True)
-    Firstname = models.CharField(max_length=250)
+    Firstname = models.CharField(max_length=250,blank=True,null=True)
     Lastname = models.CharField(max_length=250)
-    phone_number =models.CharField(null=True, blank=True,max_length=25)
-    dob = models.CharField(max_length=250)
-    clubcard_Number = models.CharField(max_length=250, blank=True, null=True)
+    phone_number =models.CharField(null=True, blank=True,max_length=15,unique=True)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
     is_superuser=models.BooleanField(default=False)

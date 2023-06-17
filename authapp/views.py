@@ -28,7 +28,7 @@ class UserRegistrationView(APIView):
     serializer=UserRegistrationSerializer(data=request.data)
     if serializer.is_valid(raise_exception=True):
         user=serializer.save()
-        return Response({'message':'Registation successful',"status":"201"})
+        return Response({'message':'Registation successful'},status=status.HTTP_201_CREATED)
     return Response({errors:serializer.errors},status=status.HTTP_400_BAD_REQUEST)
 
  
@@ -38,41 +38,53 @@ class UserLoginView(APIView):
         email=request.data.get('email')
         password=request.data.get('password')
         user=authenticate(email=email,password=password)
+        user_id = user.id
         if user is not None:
               token= get_tokens_for_user(user)
-              return Response({'message':'Login successful','status':"200","token":token})
+              return Response({"id":user_id,'message':'Login successful','status':"200","token":token},status=status.HTTP_200_OK)
         else:
-               raise serializers.ValidationError({'message':'Please Enter Valid email or password',"status":"400"})
+               return Response({'message':'Please Enter Valid email or password',"status":"400"},status=status.HTTP_400_BAD_REQUEST)
 
-class EditCustomerProfile(APIView):
+
+class ProfileView(APIView):
     renderer_classes=[UserRenderer]
     permission_classes=[IsAuthenticated]
     def post(self,request,format=None):
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+
+class EditCustomerProfile(APIView):
+    renderer_classes = [UserRenderer]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
         serializer = UserRegistrationSerializer(request.user)
-        firstname=request.data.get('firstname')
-        lastname=request.data.get('lastname')
-        phone_number=request.data.get('phone_number')
-        dob=request.data.get('dob')
-        clubcard_Number=request.data.get('clubcard_Number')
+        firstname = request.data.get('Firstname')
+        lastname = request.data.get('Lastname')
+        phone_number = request.data.get('phone_number')
+        email = request.data.get('email')
         
         if not phone_number.isnumeric():
-             raise serializers.ValidationError({'status':'status.HTTP_400_BAD_REQUEST','message':"Enter a valid mobile number"})
+            return Response({'status': status.HTTP_400_BAD_REQUEST, 'message': "Enter a valid mobile number"}, status=status.HTTP_400_BAD_REQUEST)
 
+      
         if len(phone_number) > 15 or len(phone_number) < 10:
-             raise serializers.ValidationError({'status':'status.HTTP_400_BAD_REQUEST','message':"Enter a valid mobile number"})
+            return Response({'status': status.HTTP_400_BAD_REQUEST, 'message': "Enter a valid mobile number"}, status=status.HTTP_400_BAD_REQUEST)
 
+        user_data = {}
         if firstname:
-            data = User.objects.filter(id=serializer.data['id']).update(Firstname=firstname)
+            user_data['Firstname'] = firstname
         if lastname:
-            data = User.objects.filter(id=serializer.data['id']).update(Lastname=lastname)
+            user_data['Lastname'] = lastname
         if phone_number:
-            data = User.objects.filter(id=serializer.data['id']).update(phone_number=phone_number)
-        if dob:
-            data = User.objects.filter(id=serializer.data['id']).update(dob=dob)
-        if clubcard_Number:
-            data = User.objects.filter(id=serializer.data['id']).update(clubcard_Number=clubcard_Number)
+            user_data['phone_number'] = phone_number
+        if email:
+            user_data['email'] = email
 
-        return Response({"status":"200","message":"your profile updated successfully"})   
+        User.objects.filter(id=serializer.data['id']).update(**user_data)
+
+        return Response({"status": status.HTTP_200_OK, "message": "Your profile has been updated successfully"}, status=status.HTTP_200_OK)
+   
 
 
 class ResetPasswordEmail(APIView):
@@ -125,6 +137,14 @@ class ResetPassword(APIView):
         user.set_password(password)
         user.save()
         return JsonResponse({'message':'Reset Password Successfully','status':'200'})
+
+
+class ProfileView(APIView):
+    renderer_classes=[UserRenderer]
+    permission_classes=[IsAuthenticated]
+    def post(self,request,format=None):
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data,status=status.HTTP_200_OK)
 
 
 

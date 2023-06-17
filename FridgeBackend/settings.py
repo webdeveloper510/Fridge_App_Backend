@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-sbbfaiuf7aj63$3nuok01e(xi76ay0sl00v4w+b_u(u=9snhd4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework.authtoken',
+    'channels',
     
 ]
 
@@ -110,7 +111,7 @@ WSGI_APPLICATION = 'FridgeBackend.wsgi.application'
 DATABASES = {
     'default': {
     'ENGINE': 'django.db.backends.mysql', 
-    'NAME': 'fridgeappdb',
+    'NAME': 'kivydatabase',
     'USER': 'root',
     'PASSWORD': '',
     'HOST': 'localhost', # Or an IP Address that your DB is hosted on
@@ -204,3 +205,21 @@ STATICFILES_DIRS = [
 ]
 MEDIA_ROOT = BASE_DIR /"static/media"
 MEDIA_URL = "/media/"
+
+# Celery settings
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['application/json']
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_SERIALIZER = 'json'
+
+# Celery app
+CELERY_TIMEZONE = 'UTC'
+CELERY_ENABLE_UTC = True
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULE = {
+    'notify_user_task': {
+        'task': 'FridgiApp.tasks.notify_user_task',
+        'schedule': 120.0, # run every 2 minutes
+    },
+}
