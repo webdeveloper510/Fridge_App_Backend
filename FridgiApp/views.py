@@ -1,27 +1,21 @@
-from django.shortcuts import render
 from .serializers import *
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import action
-from django.http import JsonResponse
 from rest_framework import status
 from django.http import Http404
-from django.utils import timezone
 import datetime
 from datetime import datetime
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
 from .tasks import notify_user_task
-import os
 import cv2
-from PIL import Image
-import pytesseract as pt
-import matplotlib.pyplot as plt
-from skimage import filters
-from pytesseract import Output
-from skimage.filters import threshold_local
-
+import pytesseract   
+from django.conf import settings
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
 
 class FoodCategoryView(APIView): 
   
@@ -203,19 +197,63 @@ class FoodItemTestView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-import pytesseract
-from PIL import Image
-import numpy as np
-from django.conf import settings
 
-class TextScannerView(APIView):
+
+
+# class TextScannerView(APIView):
+#     def post(self, request):
+#         image_file = request.FILES.get('image_file')
+#         Image_data= TextScanner.objects.create(image_file=image_file)
+#         Image_data.save()
+#         # image_path="/home/deepika/Desktop/Deepika/FridgeBackend/static/media/scan_images/imagetext.png"
+#         image = Image.open(image_file)
+#         image = image.convert('L')
+#         text = pytesseract.image_to_string(image)
+#         return Response({"message": "ok", "text": text})
+
+from fuzzywuzzy import fuzz
+
+class TestApiView(APIView):
     def post(self, request):
-        image_file = request.FILES.get('image_file')
-        Image_data= TextScanner.objects.create(image_file=image_file)
-        Image_data.save()
-        # image_path="/home/deepika/Desktop/Deepika/FridgeBackend/static/media/scan_images/imagetext.png"
-        image = Image.open(image_file)
-        image = image.convert('L')
-        text = pytesseract.image_to_string(image)
-        return Response({"message": "ok", "text": text})
-    
+        image = request.data.get('image')
+        image_data = FoodListImage.objects.create(image=image)
+        image_data.save()
+        input_image_path = str(settings.MEDIA_ROOT) + '/' + str(image_data.image)
+        
+        # Read image 
+        input_image = cv2.imread(input_image_path)
+        # Extract text from image 
+        extracted_text = pytesseract.image_to_string(input_image) 
+       
+        # Text preprocessing 
+        nltk.download('punkt')
+        nltk.download('stopwords')
+        tokens = word_tokenize(extracted_text)
+        stop_words = set(stopwords.words('english'))
+        filtered_tokens = [token for token in tokens if token.lower() not in stop_words]
+        stemmer = PorterStemmer()
+        stemmed_tokens = [stemmer.stem(token) for token in filtered_tokens]
+        
+        queryset = FoodItem_Label_Name_Image.objects.all().values('category', 'food_item_name')
+        food_item_names = [item['food_item_name'] for item in queryset]
+        
+        match_threshold = 80  # Match threshold percentage
+        
+        matched_items = []
+        for token in stemmed_tokens:
+            for food_item_name in food_item_names:
+                similarity = fuzz.token_set_ratio(token, food_item_name)
+                if similarity >= match_threshold:
+                    matched_items.append(food_item_name)
+        
+        if matched_items:
+            print("Matched Items:")
+            for item in matched_items:
+                print(item)
+        else:
+            print("No matches found.")
+        
+        return Response("ok")
+
+      
+

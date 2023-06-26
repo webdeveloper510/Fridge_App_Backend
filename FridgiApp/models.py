@@ -20,3 +20,11 @@ class Notification(models.Model):
 
 class TextScanner(models.Model):
     image_file=models.ImageField(upload_to="scan_images/",blank=True,null=True)
+
+class FoodListImage(models.Model):
+    image=models.ImageField(upload_to="foodlist_images/",blank=True,null=True)
+
+class FoodItem_Label_Name_Image(models.Model):
+    category=models.CharField(max_length=50, null=True,blank=True)
+    food_item_name=models.CharField(max_length=50, null=True,blank=True)
+    image=models.ImageField(upload_to="food_itemimages/",blank=True,null=True)

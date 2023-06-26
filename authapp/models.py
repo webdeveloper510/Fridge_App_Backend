@@ -4,7 +4,7 @@ from django.contrib.auth.models import *
 
 #  Custom User Manager
 class UserManager(BaseUserManager):
-    def create_user(self, email,Firstname,Lastname, dob, phone_number,clubcard_Number, password=None):
+    def create_user(self, email,Firstname,Lastname,phone_number, password=None):
         if not email:
             raise ValueError('User must have an email address')
 
@@ -12,9 +12,7 @@ class UserManager(BaseUserManager):
             email = self.normalize_email(email),
             Firstname = Firstname,
             Lastname = Lastname,
-            dob = dob,
             phone_number = phone_number,
-            clubcard_Number=clubcard_Number,
         )
         user.set_password(password)
         user.save(using=self._db)
@@ -25,9 +23,7 @@ class UserManager(BaseUserManager):
             email,
             Firstname ="None",
             Lastname = "None",
-            dob ="None",
             phone_number ="None",
-            clubcard_Number="None",
             password=password,
         )
         user.is_admin = True

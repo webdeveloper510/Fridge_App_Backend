@@ -15,7 +15,8 @@ urlpatterns = [
    path('usebydate/', views.UseBydateItem.as_view()),
    path('food_itemslist/<int:user_id>/', ItemByUser.as_view(), name='item-by-user'),
    path('food_expireditemslist/<int:user_id>/', ExpiredItemView.as_view(), name='item-by-user'),
-   path('textscanner/', views.TextScannerView.as_view()),
+   # path('textscanner/', views.TextScannerView.as_view()),
+   path('testapi/', views.TestApiView.as_view()),
 ]
 
 if settings.DEBUG:

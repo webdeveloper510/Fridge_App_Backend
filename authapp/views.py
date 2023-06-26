@@ -37,7 +37,7 @@ class UserRegistrationView(APIView):
     serializer=UserRegistrationSerializer(data=request.data)
     if serializer.is_valid(raise_exception=True):
         user=serializer.save()
-        return Response({'message':'Registation successful'},status=status.HTTP_201_CREATED)
+        return Response({'message':'Registation successful','data':serializer.data},status=status.HTTP_201_CREATED)
     return Response({errors:serializer.errors},status=status.HTTP_400_BAD_REQUEST)
 
  
@@ -49,13 +49,13 @@ class UserLoginView(APIView):
         user=authenticate(email=email,password=password)
         
         if user is not None:
-              token= get_tokens_for_user(user)
-              user_id_data =User.objects.filter(email=email).values('id')
-              user_id=user_id_data[0]['id']
-              print(user_id)
-              return Response({"id":user_id,'message':'Login successful','status':"200","token":token},status=status.HTTP_200_OK)
+            token= get_tokens_for_user(user)
+            user_id_data =User.objects.filter(email=email).values('id')
+            user_id=user_id_data[0]['id']
+            print(user_id)
+            return Response({"id":user_id,'message':'Login successful','status':"200","token":token},status=status.HTTP_200_OK)
         else:
-               return Response({'message':'Please Enter Valid email or password',"status":"400"},status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message':'Please Enter Valid email or password',"status":"400"},status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileView(APIView):
@@ -138,7 +138,7 @@ class OtpView(APIView):
             current_time = datetime.datetime.now()
             time_difference = current_time -parse_date(otp_created_time[0]['email_otp_created_time'])
             if time_difference.total_seconds() > 300:
-                 return Response({"message": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"message":"OTP has expired"}, status=status.HTTP_400_BAD_REQUEST)
         
         return Response({'message': 'You entered the correct OTP'}, status=status.HTTP_200_OK)
 
@@ -203,7 +203,6 @@ class ProfileView(APIView):
     def post(self,request,format=None):
         serializer = UserProfileSerializer(request.user)
         return Response(serializer.data,status=status.HTTP_200_OK)
-
 
 
 class LogoutUser(APIView):
