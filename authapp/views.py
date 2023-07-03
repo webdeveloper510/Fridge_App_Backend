@@ -76,12 +76,12 @@ class EditCustomerProfile(APIView):
         phone_number = request.data.get('phone_number')
         email = request.data.get('email')
         
-        if not phone_number.isnumeric():
-            return Response({'status': status.HTTP_400_BAD_REQUEST, 'message': "Enter a valid mobile number"}, status=status.HTTP_400_BAD_REQUEST)
+        # if not phone_number.isnumeric():
+        #     return Response({'status': status.HTTP_400_BAD_REQUEST, 'message': "Enter a valid mobile number"}, status=status.HTTP_400_BAD_REQUEST)
 
       
-        if len(phone_number) > 15 or len(phone_number) < 10:
-            return Response({'status': status.HTTP_400_BAD_REQUEST, 'message': "Enter a valid mobile number"}, status=status.HTTP_400_BAD_REQUEST)
+        # if len(phone_number) > 15 or len(phone_number) < 10:
+        #     return Response({'status': status.HTTP_400_BAD_REQUEST, 'message': "Enter a valid mobile number"}, status=status.HTTP_400_BAD_REQUEST)
 
         user_data = {}
         if firstname:

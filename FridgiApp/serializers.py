@@ -9,10 +9,17 @@ class FoodItemSerializer(serializers.ModelSerializer):
      def create(self, validate_data):
          return FoodItem.objects.create(**validate_data)
 
-class Food_Category_Serializer(serializers.ModelSerializer):
+
+class CaptureImage_Serializer(serializers.ModelSerializer):
      class Meta:
-        model= Food_Category
+        model= CaptureImage
         fields = '__all__'
            
      def create(self, validate_data):
-         return Food_Category.objects.create(**validate_data)
+         return CaptureImage.objects.create(**validate_data)
+    
+
+class FoodItemNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FoodItem
+        fields = ['name']
