@@ -23,3 +23,4 @@ class FoodItemNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodItem
         fields = ['name']
+

@@ -5,10 +5,7 @@ from rest_framework import status
 import datetime
 from datetime import datetime
 from rest_framework import generics
-from .tasks import notify_user_task
-import cv2
-import pytesseract   
-from django.conf import settings
+from .tasks import notify_user_task 
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
@@ -18,95 +15,110 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from PIL import Image
 import io
+from rest_framework.exceptions import APIException
+import os
+import cv2
+from PIL import Image
+import pytesseract as pt
+import matplotlib.pyplot as plt
+from skimage import filters
+from pytesseract import Output
+from skimage.filters import threshold_local
+import cv2
+from django.conf import settings
+
+
+variety_name_list = ['Chicken', 'Beef', 'Lamb', 'Fish', 'Pork', 'Sausages', 'Frankfurters', 'Milk', 'Cheese', 'Eggs', 'Fruit', 'Veg', 'Lettuce', 'Green',
+                    'Beans', 'Cucumber', 'Mushrooms', 'Onion', 'Radish', 'Yogurts', 'Butter', 'Bread', 'Cooked_Foods', 'Meats', 'Pasta', 'Rice', 'Ready Meals', 'Veg & Processed Meats',
+                    'Mayo', 'Tomato Ketchup', 'Salad Cream', 'Brown Sauce', 'BBQ & Jar Sauces','Pickle', 'Freezer','Meats', 
+                    'Veg', 'Fruit', 'Bread', 'Milk', 'Ice Cream', 'Cheese (Grated is best)', 'Butter', 'Cooked Foods','sugar']
+
+
+def imshow(title="image", img=None, size=10):
+    h, w = img.shape[0], img.shape[1]
+    aspect_ratio = h / w
+    plt.figure(figsize=(size * aspect_ratio, size))
+    plt.title(title)
+    plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    plt.show()
+
+
 
 class ImageCaptureView(APIView):
+    
+    def remove_noise_and_read_text(self, image_path,user_id):
+        Read_input_image = cv2.imread(image_path)
+        V = cv2.split(cv2.cvtColor(Read_input_image, cv2.COLOR_BGR2HSV))[2]
+        T = threshold_local(V, 25, offset=25, method="gaussian")
+        thresh = (V > T).astype("uint8") * 255
+        d = pt.image_to_data(thresh, output_type=Output.DICT)
+        n_boxes = len(d['text'])
+        for i in range(n_boxes):
+            if int(d['conf'][i] > (-1)):
+                (x, y, w, h) = (d['left'][i], d['top'][i], d['width'][i], d['height'][i])
+                rect = cv2.rectangle(Read_input_image, (x, y, w, h), (0, 0, 255), 3)
+        imshow("Rectange Created Image ", rect)
+        extracted_text = pt.image_to_string(thresh)
+        matched_varieties = []
+        for variety_name in variety_name_list:
+            if variety_name.lower() in extracted_text.lower():
+                matched_varieties.append(variety_name)
+                print("item---",matched_varieties)
+
+        print("Matched Varieties: {}".format(matched_varieties))
+        array=[]
+        user = User.objects.get(id=user_id)
+        for items in matched_varieties:
+            Food_data=FoodItem.objects.create(name=items,user=user)
+            serializer=FoodItemNameSerializer(data=Food_data)
+            Food_data.save()
+            data={"id":Food_data.id,"item":items,"created_at":Food_data.created_at,"last_updated":Food_data.last_updated}
+            array.append(data)
+        return Response({"messgae":"text extracted succesfully","data":array})
+
     def post(self, request):
-        
-        user_id=request.data.get('user_id')
-        
+        user_id = request.data.get('user_id')
         image = request.data.get('image')
-
         if not user_id:
-            return Response({"message":"user is required"},status=status.HTTP_400_BAD_REQUEST)
-        
-        
-        if not  User.objects.filter(id=user_id).exists():
-            return Response({"message":"user does not exist"},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-
-        pil_image = Image.open(image)
-
-        rgba_image = pil_image.convert('RGBA')
-
-        image_stream = io.BytesIO()
-
-        rgba_image.save(image_stream, format='PNG')
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"message": "User does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
         test_image = CaptureImage()
-        test_image.image.save('image.png', image_stream)
-
+        test_image.image.save('image.png', image)
         test_image.save()
         serializer = CaptureImage_Serializer(test_image)
         input_image_path = str(settings.MEDIA_ROOT) + '/' + str(test_image.image)
+
+        return self.remove_noise_and_read_text(input_image_path, user_id)
         
-        # Read image 
-        input_image = cv2.imread(input_image_path)
-        # Extract text from image 
-        extracted_text = pytesseract.image_to_string(input_image) 
-       
-        # Text preprocessing 
-        nltk.download('punkt')
-        nltk.download('stopwords')
-        tokens = word_tokenize(extracted_text)
-        stop_words = set(stopwords.words('english'))
-        filtered_tokens = [token for token in tokens if token.lower() not in stop_words]
-        stemmer = PorterStemmer()
-        stemmed_tokens = [stemmer.stem(token) for token in filtered_tokens]
-        
-        queryset = FoodItem_Label_Name_Image.objects.all().values('category', 'food_item_name')
-        food_item_names = [item['food_item_name'] for item in queryset]
-        
-        match_threshold = 80  # Match threshold percentage
-        
-        matched_items = []
-        for token in stemmed_tokens:
-            for food_item_name in food_item_names:
-                similarity = fuzz.token_set_ratio(token, food_item_name)
-                if similarity >= match_threshold:
-                    matched_items.append(food_item_name)
-        
-        if matched_items:
-            print("Matched Items:")
-            array=[]
-            for item in matched_items:
-                print(item)
-                user = User.objects.get(id=user_id)
-                user.user = user
-                fooddata=FoodItem.objects.create(user=user,name=item)
-                fooddata.save()
-                array.append(item)
-            return Response({"message":"Item extracted successfuuly","data":array})
-        
-        else:
-            print("No matches found.")
-            return Response("No matches found.")
-      
-# Get User Item by User
 
 class FoodItemByUserView(APIView):
     def get(self, request, user_id):
-        food_items = FoodItem.objects.filter(user_id=user_id)
-        serializer = FoodItemNameSerializer(food_items, many=True)
-        return Response(serializer.data)
+        last_inserted_data = FoodItem.objects.filter(user_id=user_id).order_by('-last_updated')
+        print(last_inserted_data)
 
+        food_item_names = []
+        for item in last_inserted_data:
+            food_item_names.append(item.name)
 
+        return Response({'message': 'success','data':food_item_names})
 
+# update expiry date api
 
-
-
-
-
-
+class UpdateFoodItemExpiryDate(APIView):
+    def post(self, request, format=None):
+        item_id=request.data.get("item_id")
+        expiry_date=request.data.get("expiry_date")
+        if not item_id:
+            return Response({"message":"food_item id is required"},status=status.HTTP_400_BAD_REQUEST)
+        if not FoodItem.objects.filter(id=item_id).exists():
+            return Response({"message":"item does not exist"},status=status.HTTP_400_BAD_REQUEST)
+        expiry_item_data=FoodItem.objects.filter(id=item_id).update(expiry_date=expiry_date)
+        return Response({"message":"update data successfully","status":status.HTTP_200_OK})
 
     
 class GreenInDateItem(APIView):

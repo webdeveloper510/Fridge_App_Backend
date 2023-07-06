@@ -10,8 +10,8 @@ urlpatterns = [
    # path('expirydateitems/', views.RedExpiryDateItem.as_view()),
    # path('usebydate/', views.UseBydateItem.as_view()),
    # path('food_expireditemslist/<int:user_id>/', ExpiredItemView.as_view(), name='item-by-user'),
-   
    path('food_itemslist/<int:user_id>/', FoodItemByUserView.as_view(), name='item-by-user'),
+   path('update_food_item/', UpdateFoodItemExpiryDate.as_view(), name='updateitem'),
    path('capture_image/', views.ImageCaptureView.as_view()),
 ]
 
