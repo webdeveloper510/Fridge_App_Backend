@@ -29,11 +29,12 @@ from nltk.stem.snowball import SnowballStemmer
 from fuzzywuzzy import fuzz 
 from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist
+Base_url="http://127.0.0.1:8000"
 
 
 
 variety_name_list = ['Chicken', 'Beef', 'Lamb', 'Fish', 'Pork', 'Sausages', 'Frankfurters', 'Milk', 'Cheese', 'Eggs', 'Fruit', 'Veg', 'Lettuce', 'Green',
-                    'Beans', 'Cucumber', 'Mushrooms', 'Onion', 'Radish', 'Yogurts', 'Butter', 'Bread', 'Cooked_Foods', 'Meats', 'Pasta', 'Rice', 'Ready Meals', 'Veg & Processed Meats',
+                    'Beans', 'Cucumber', 'Mushrooms', 'Onions', 'Radish', 'Yogurts', 'Butter', 'Bread', 'Cooked_Foods', 'Meats', 'Pasta', 'Rice', 'Ready Meals', 'Veg & Processed Meats',
                     'Mayo', 'Tomato Ketchup', 'Salad Cream', 'Brown Sauce', 'BBQ & Jar Sauces','Pickle', 'Freezer','Meats', 
                     'Veg', 'Fruit', 'Bread', 'Milk', 'Ice Cream', 'Cheese (Grated is best)', 'Butter', 'Cooked Foods','sugar']
 
@@ -136,17 +137,41 @@ class UpdateFoodItemExpiryDate(APIView):
         return Response({"message": "Data updated successfully", "status": status.HTTP_200_OK})
 
 
+
+
+from fuzzywuzzy import fuzz
+
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .models import FoodItem, FoodItem_Label_Name_Image
+
+
 class FoodItemByUserView(APIView):
     def get(self, request, user_id):
         last_inserted_data = FoodItem.objects.filter(user_id=user_id)
-        print(last_inserted_data)
 
         food_item_names = []
         for item in last_inserted_data:
             food_item_names.append(item.name)
 
-        return Response({'message': 'success','data':food_item_names})
+        matched_items = []
+        for name in food_item_names:
+            for variety_name in variety_name_list:
+                ratio = fuzz.ratio(name, variety_name)
+                if ratio >= 80:
+                    matched_items.append(variety_name)
 
+        matched_item_data = []
+        for item in matched_items:
+            food_item = FoodItem_Label_Name_Image.objects.filter(food_item_name=item).first()
+            if food_item:
+                matched_item_data.append({
+                    'food_item_name': food_item.food_item_name,
+                    'category': food_item.category.category_name if food_item.category else '',
+                    'image_url': Base_url + food_item.image.url if food_item.image else ''
+                })
+
+        return Response({'message': 'success', 'data': matched_item_data})
 
 
     
