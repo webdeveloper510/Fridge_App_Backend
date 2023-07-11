@@ -13,8 +13,12 @@ class FoodItem(models.Model):
 class FoodListImage(models.Model):
     image=models.ImageField(upload_to="foodlist_images/",blank=True,null=True)
 
+class FoodCategory(models.Model):
+    category_name=models.CharField(max_length=50, null=True,blank=True)
+
+
 class FoodItem_Label_Name_Image(models.Model):
-    category=models.CharField(max_length=50, null=True,blank=True)
+    category=models.ForeignKey(FoodCategory, on_delete=models.CASCADE)
     food_item_name=models.CharField(max_length=50, null=True,blank=True)
     image=models.ImageField(upload_to="food_itemimages/",blank=True,null=True)
 

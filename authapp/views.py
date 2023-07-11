@@ -18,7 +18,7 @@ from django.core.mail import send_mail
 import datetime
 from dateutil.parser import parse as parse_date
 # from django.contrib.auth.models import User
-
+from datetime import datetime
 
 #Creating tokens manually
 def get_tokens_for_user(user):
@@ -37,7 +37,9 @@ class UserRegistrationView(APIView):
     serializer=UserRegistrationSerializer(data=request.data)
     if serializer.is_valid(raise_exception=True):
         user=serializer.save()
-        return Response({'message':'Registation successful','data':serializer.data},status=status.HTTP_201_CREATED)
+        data={"id":serializer.data['id'],"email":serializer.data['email'],"Firstname":serializer.data['Firstname'],
+              "Lastname":serializer.data['Lastname'],"phone_number":serializer.data['phone_number']}
+        return Response({'message':'Registation successful','data':data},status=status.HTTP_201_CREATED)
     return Response({errors:serializer.errors},status=status.HTTP_400_BAD_REQUEST)
 
  
@@ -75,7 +77,14 @@ class EditCustomerProfile(APIView):
         lastname = request.data.get('Lastname')
         phone_number = request.data.get('phone_number')
         email = request.data.get('email')
+        dob=request.data.get('dob')
         
+        try:
+            datetime.strptime(dob,'%Y-%m-%d')
+        except ValueError:
+            return Response({"message": " Date of birth has an invalid format.It must be in YYYY-MM-DD format."}, status=status.HTTP_400_BAD_REQUEST)
+
+
         # if not phone_number.isnumeric():
         #     return Response({'status': status.HTTP_400_BAD_REQUEST, 'message': "Enter a valid mobile number"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -92,6 +101,8 @@ class EditCustomerProfile(APIView):
             user_data['phone_number'] = phone_number
         if email:
             user_data['email'] = email
+        if  dob:
+            user_data['dob']=dob
 
         User.objects.filter(id=serializer.data['id']).update(**user_data)
 

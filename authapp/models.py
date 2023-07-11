@@ -4,7 +4,7 @@ from django.contrib.auth.models import *
 
 #  Custom User Manager
 class UserManager(BaseUserManager):
-    def create_user(self, email,Firstname,Lastname,phone_number, password=None):
+    def create_user(self, email,Firstname,Lastname,phone_number,dob, password=None):
         if not email:
             raise ValueError('User must have an email address')
 
@@ -13,6 +13,7 @@ class UserManager(BaseUserManager):
             Firstname = Firstname,
             Lastname = Lastname,
             phone_number = phone_number,
+            dob=dob
         )
         user.set_password(password)
         user.save(using=self._db)
@@ -24,6 +25,7 @@ class UserManager(BaseUserManager):
             Firstname ="None",
             Lastname = "None",
             phone_number ="None",
+            dob="None",
             password=password,
         )
         user.is_admin = True
@@ -34,7 +36,8 @@ class User(AbstractBaseUser,PermissionsMixin):
     email = models.EmailField(verbose_name='Email', max_length=255, unique=True)
     Firstname = models.CharField(max_length=250,blank=True,null=True)
     Lastname = models.CharField(max_length=250)
-    phone_number =models.CharField(null=True, blank=True,max_length=15,unique=True)
+    phone_number =models.CharField(null=True, blank=True,max_length=15)
+    dob=models.DateField(null=True, blank=True)
     email_otp=models.CharField(null=True, blank=True,max_length=6)
     email_otp_created_time=models.CharField(null=True, blank=True,max_length=200)
     is_active = models.BooleanField(default=True)

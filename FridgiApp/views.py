@@ -11,8 +11,6 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from fuzzywuzzy import fuzz
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from PIL import Image
 import io
 from rest_framework.exceptions import APIException
@@ -26,6 +24,12 @@ from pytesseract import Output
 from skimage.filters import threshold_local
 import cv2
 from django.conf import settings
+nltk.download('punkt')
+from nltk.stem.snowball import SnowballStemmer
+from fuzzywuzzy import fuzz 
+from datetime import datetime
+from django.core.exceptions import ObjectDoesNotExist
+
 
 
 variety_name_list = ['Chicken', 'Beef', 'Lamb', 'Fish', 'Pork', 'Sausages', 'Frankfurters', 'Milk', 'Cheese', 'Eggs', 'Fruit', 'Veg', 'Lettuce', 'Green',
@@ -59,11 +63,15 @@ class ImageCaptureView(APIView):
                 rect = cv2.rectangle(Read_input_image, (x, y, w, h), (0, 0, 255), 3)
         imshow("Rectange Created Image ", rect)
         extracted_text = pt.image_to_string(thresh)
+        snowBallStemmer = SnowballStemmer("english")
+        wordList = nltk.word_tokenize(extracted_text)
+        stemWords = [snowBallStemmer.stem(word) for word in wordList]
         matched_varieties = []
         for variety_name in variety_name_list:
-            if variety_name.lower() in extracted_text.lower():
-                matched_varieties.append(variety_name)
-                print("item---",matched_varieties)
+            for i in stemWords:
+                anc = fuzz.ratio(variety_name.lower() , i)
+                if anc > 80:
+                    matched_varieties.append(variety_name)
 
         print("Matched Varieties: {}".format(matched_varieties))
         array=[]
@@ -94,11 +102,43 @@ class ImageCaptureView(APIView):
         input_image_path = str(settings.MEDIA_ROOT) + '/' + str(test_image.image)
 
         return self.remove_noise_and_read_text(input_image_path, user_id)
+
+
+class UpdateFoodItemExpiryDate(APIView):
+    def post(self, request, format=None):
+        data = request.data.get('data')
+        if not data:
+            return Response({'message': "You cannot send empty data"}, status=status.HTTP_400_BAD_REQUEST)
         
+        for food_data in data:
+            item_id = food_data.get('id')
+            expiry_date = food_data.get('expiry_date')
+            
+            if not item_id:
+                return Response({"message": "Food item id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                food_item = FoodItem.objects.get(id=item_id)
+            except ObjectDoesNotExist:
+                return Response({"message": "Item does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not expiry_date:
+                return Response({"message": "Expiry date is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                datetime.strptime(expiry_date, '%Y-%m-%d')
+            except ValueError:
+                return Response({"message": "Expiry date has an invalid format. It must be in YYYY-MM-DD format."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            food_item.expiry_date = expiry_date
+            food_item.save()
+        
+        return Response({"message": "Data updated successfully", "status": status.HTTP_200_OK})
+
 
 class FoodItemByUserView(APIView):
     def get(self, request, user_id):
-        last_inserted_data = FoodItem.objects.filter(user_id=user_id).order_by('-last_updated')
+        last_inserted_data = FoodItem.objects.filter(user_id=user_id)
         print(last_inserted_data)
 
         food_item_names = []
@@ -107,18 +147,7 @@ class FoodItemByUserView(APIView):
 
         return Response({'message': 'success','data':food_item_names})
 
-# update expiry date api
 
-class UpdateFoodItemExpiryDate(APIView):
-    def post(self, request, format=None):
-        item_id=request.data.get("item_id")
-        expiry_date=request.data.get("expiry_date")
-        if not item_id:
-            return Response({"message":"food_item id is required"},status=status.HTTP_400_BAD_REQUEST)
-        if not FoodItem.objects.filter(id=item_id).exists():
-            return Response({"message":"item does not exist"},status=status.HTTP_400_BAD_REQUEST)
-        expiry_item_data=FoodItem.objects.filter(id=item_id).update(expiry_date=expiry_date)
-        return Response({"message":"update data successfully","status":status.HTTP_200_OK})
 
     
 class GreenInDateItem(APIView):
@@ -154,15 +183,12 @@ class RedExpiryDateItem(APIView):
                array.append(food_list)
         return Response(array)
 
-class UseBydateItem(APIView):
-     def post(self, request, format=None):
-         fooditem_id=request.data.get('fooditem_id')
-         if not fooditem_id:
-             return Response({"message":"food item id is required"},status=status.HTTP_400_BAD_REQUEST)
-         food_items = FoodItem.objects.filter(id=fooditem_id).values("food_name","expiry_date")
-         item_name=food_items[0]['food_name']
-         use_by_date=food_items[0]['expiry_date']
-         return Response({"status":"success","food name":item_name,"use_by_date":use_by_date},status=status.HTTP_200_OK)
+
+                
+             
+             
+             
+         
      
 # item by user_id
 
