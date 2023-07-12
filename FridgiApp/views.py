@@ -209,11 +209,7 @@ class RedExpiryDateItem(APIView):
         return Response(array)
 
 
-                
-             
-             
-             
-         
+           
      
 # item by user_id
 
