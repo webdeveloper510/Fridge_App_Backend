@@ -3,7 +3,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 import datetime
-from datetime import datetime
 from rest_framework import generics
 from .tasks import notify_user_task 
 import nltk
@@ -11,9 +10,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from fuzzywuzzy import fuzz
-from PIL import Image
 import io
-from rest_framework.exceptions import APIException
 import os
 import cv2
 from PIL import Image
@@ -27,8 +24,12 @@ from django.conf import settings
 nltk.download('punkt')
 from nltk.stem.snowball import SnowballStemmer
 from fuzzywuzzy import fuzz 
+from datetime import date  
 from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist
+
+
+
 Base_url="http://127.0.0.1:8000"
 
 
@@ -166,6 +167,7 @@ class FoodItemByUserView(APIView):
             food_item = FoodItem_Label_Name_Image.objects.filter(food_item_name=item).first()
             if food_item:
                 matched_item_data.append({
+                    'id':food_item.id,
                     'food_item_name': food_item.food_item_name,
                     'category': food_item.category.category_name if food_item.category else '',
                     'image_url': Base_url + food_item.image.url if food_item.image else ''
@@ -173,43 +175,72 @@ class FoodItemByUserView(APIView):
 
         return Response({'message': 'success', 'data': matched_item_data})
 
+# Remove Item from fridge 
 
-    
+class DeleteFridgeItemView(APIView):
+    def post(self, request):
+        user_id=request.data.get('user_id')
+        food_item_id=request.data.get('food_item_id')
+
+        if not user_id or not FoodItem.objects.filter(user=user_id):
+            return Response({"message":"Invalid user detail"},status=status.HTTP_400_BAD_REQUEST)
+        
+        if not food_item_id or not FoodItem.objects.filter(id=food_item_id):
+             return Response({"message":"Invalid item detail "},status=status.HTTP_400_BAD_REQUEST)
+        
+        item=FoodItem.objects.filter(user=user_id,id=food_item_id).delete()
+        
+        return Response({'message': 'Remove Item Successfully'},status=status.HTTP_200_OK)
+
+
 class GreenInDateItem(APIView):
-    def get(self, request, format=None):
-        current_date = datetime.date.today()
-        food_items = FoodItem.objects.all().order_by('id')
-        serializer = FoodItemSerializer(food_items, many=True)
+    def get(self, request, user_id):
+        current_date =date.today()
+        food_items = FoodItem.objects.filter(user=user_id).values("name","expiry_date","user")
         array=[]
-        for food_item_data in serializer.data:
-            expiry_date_str = food_item_data['expiry_date']
-            food_name = food_item_data['food_name']
-            expiry_date = datetime.datetime.strptime(expiry_date_str, '%Y-%m-%d').date()
-            
-            if expiry_date >=current_date:
-               print("green",food_name)
-               food_list= {"food_name":food_name}
-               array.append(food_list)
+        for items in food_items:
+            expiry_date_str = str(items['expiry_date'])
+            food_name = items['name']
+            if expiry_date_str :
+                expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%d').date()
+                if expiry_date >=current_date:
+                    food_list= {"food_name":food_name}
+                    array.append(food_list)
         return Response(array)
+
 
 class RedExpiryDateItem(APIView):
-    def get(self, request, format=None):
-        current_date = datetime.date.today()
-        food_items = FoodItem.objects.all().order_by('id')
-        serializer = FoodItemSerializer(food_items, many=True)
+    def get(self, request, user_id):
+        current_date =date.today()
+        food_items = FoodItem.objects.filter(user=user_id).values("name","expiry_date","user")
         array=[]
-        for food_item_data in serializer.data:
-            expiry_date_str = food_item_data['expiry_date']
-            food_name = food_item_data['food_name']
-            expiry_date = datetime.datetime.strptime(expiry_date_str, '%Y-%m-%d').date()
+        for food_item_data in food_items:
+            expiry_date_str = str(food_item_data['expiry_date'])
+            food_name = food_item_data['name']
+            expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%d').date()
             if expiry_date<current_date:
-               print("green",food_name)
                food_list= {"food_name":food_name}
                array.append(food_list)
         return Response(array)
 
 
-           
+class UseBydateItem(APIView):
+    def get(self, request, user_id):
+        today = date.today()
+        food_items = FoodItem.objects.filter(user=user_id, expiry_date__gte=today).values("name", "expiry_date", "user")
+        array = []
+        for food_item_data in food_items:
+            expiry_date = food_item_data['expiry_date']
+            days_until_expiry = (expiry_date - today).days
+            if days_until_expiry <= 5:  # Filter items with expiry within 7 days
+                food_name = food_item_data['name']
+                food_list= {"food_name":food_name}
+                array.append(food_list)
+        return Response(array)
+
+
+
+
      
 # item by user_id
 
