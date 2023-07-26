@@ -150,10 +150,10 @@ from .models import FoodItem, FoodItem_Label_Name_Image
 class FoodItemByUserView(APIView):
     def get(self, request, user_id):
         last_inserted_data = FoodItem.objects.filter(user_id=user_id)
-
         food_item_names = []
         for item in last_inserted_data:
             food_item_names.append(item.name)
+        
 
         matched_items = []
         for name in food_item_names:
@@ -161,17 +161,20 @@ class FoodItemByUserView(APIView):
                 ratio = fuzz.ratio(name, variety_name)
                 if ratio >= 80:
                     matched_items.append(variety_name)
+        print("matched item-->",matched_items)
 
         matched_item_data = []
         for item in matched_items:
             food_item = FoodItem_Label_Name_Image.objects.filter(food_item_name=item).first()
-            if food_item:
-                matched_item_data.append({
-                    'id':food_item.id,
-                    'food_item_name': food_item.food_item_name,
-                    'category': food_item.category.category_name if food_item.category else '',
-                    'image_url': Base_url + food_item.image.url if food_item.image else ''
-                })
+            user_food_item=FoodItem.objects.filter(name=item).first()
+            
+            matched_item_data.append({
+                'id':user_food_item.id,
+                'user_id':user_id,
+                'food_item_name': food_item.food_item_name,
+                'category': food_item.category.category_name if food_item.category else '',
+                'image_url': Base_url + food_item.image.url if food_item.image else ''
+            })
 
         return Response({'message': 'success', 'data': matched_item_data})
 
@@ -204,7 +207,7 @@ class GreenInDateItem(APIView):
             if expiry_date_str :
                 expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%d').date()
                 if expiry_date >=current_date:
-                    food_list= {"food_name":food_name}
+                    food_list= {"food_name":food_name,"date":expiry_date}
                     array.append(food_list)
         return Response(array)
 
@@ -219,7 +222,7 @@ class RedExpiryDateItem(APIView):
             food_name = food_item_data['name']
             expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%d').date()
             if expiry_date<current_date:
-               food_list= {"food_name":food_name}
+               food_list= {"food_name":food_name,"expiry_date":expiry_date}
                array.append(food_list)
         return Response(array)
 
@@ -234,8 +237,13 @@ class UseBydateItem(APIView):
             days_until_expiry = (expiry_date - today).days
             if days_until_expiry <= 5:  # Filter items with expiry within 7 days
                 food_name = food_item_data['name']
-                food_list= {"food_name":food_name}
+                food_list = {"food_name": food_name,"days_until_expiry":expiry_date}
                 array.append(food_list)
+
+        if not array:  
+            response_data = {"message":"No products with expiry date found."}
+            return Response(response_data)
+            
         return Response(array)
 
 
