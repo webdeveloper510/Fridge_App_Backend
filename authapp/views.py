@@ -220,5 +220,5 @@ class LogoutUser(APIView):
   renderer_classes = [UserRenderer]
   permission_classes=[IsAuthenticated]
   def post(self, request, format=None):
-    return Response({'message':'Logout Successfully','status':'status.HTTP_200_OK'})
+    return Response({'message':'Logout Successfully','status':status.HTTP_200_OK})
   

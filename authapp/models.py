@@ -34,12 +34,12 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser,PermissionsMixin):
     email = models.EmailField(verbose_name='Email', max_length=255, unique=True)
-    Firstname = models.CharField(max_length=250,blank=True,null=True)
+    Firstname = models.CharField(max_length=250,blank=False,null=True)
     Lastname = models.CharField(max_length=250)
-    phone_number =models.CharField(null=True, blank=True,max_length=15)
-    dob=models.DateField(null=True, blank=True)
-    email_otp=models.CharField(null=True, blank=True,max_length=6)
-    email_otp_created_time=models.CharField(null=True, blank=True,max_length=200)
+    phone_number =models.CharField(null=True, blank=False,max_length=15)
+    dob=models.DateField(null=False, blank=False)
+    email_otp=models.CharField(null=True, blank=False,max_length=6)
+    email_otp_created_time=models.CharField(null=True, blank=False,max_length=200)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
     is_superuser=models.BooleanField(default=False)

@@ -8,12 +8,12 @@ from authapp.utils import Util
 class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
-        fields=['id','email','password','Firstname','Lastname','dob','phone_number']
+        fields=['id','Firstname','Lastname','phone_number','dob','email','password']
 
         extra_kwargs={
            
-            'Firstname': {'error_messages': {'required': "firstname is required",'blank':'firstname could not blank'}},
-            'Lastname': {'error_messages': {'required': "lastname is required",'blank':'lastname could not blank'}},
+            'Firstname': {'error_messages': {'required': "firstname is required",'blank':'firstname could not be blank'}},
+            'Lastname': {'error_messages': {'required': "lastname is required",'blank':'lastname could not be blank'}},
             'email': {'error_messages': {'required': "email is required",'blank':'please provide a email'}},
             'phone_number': {'error_messages': {'required': "phone number is required",'blank':'phone number could not blank'}},
             'dob': {'error_messages': {'required': " date of birth  is required",'blank':'Date of birth could not be  blank'}},
@@ -34,6 +34,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
-        fields=['id','email','Firstname','Lastname','phone_number']   
+        fields=['id','email','Firstname','Lastname','phone_number','dob']   
 
 
