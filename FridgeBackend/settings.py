@@ -73,7 +73,6 @@ REST_FRAMEWORK = {
 
 
 
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -224,3 +223,5 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 120.0, # run every 2 minutes
     },
 }
+
+USE_L10N = False

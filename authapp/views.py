@@ -34,6 +34,7 @@ def generate_email_otp(self):
 class UserRegistrationView(APIView):
  renderer_classes=[UserRenderer]
  def post(self,request,format=None):
+    
     serializer=UserRegistrationSerializer(data=request.data)
     if serializer.is_valid(raise_exception=True):
         user=serializer.save()
@@ -54,7 +55,6 @@ class UserLoginView(APIView):
             token= get_tokens_for_user(user)
             user_id_data =User.objects.filter(email=email).values('id')
             user_id=user_id_data[0]['id']
-            print(user_id)
             return Response({"id":user_id,'message':'Login successful','status':"200","token":token},status=status.HTTP_200_OK)
         else:
             return Response({'message':'Please Enter Valid email or password',"status":"400"},status=status.HTTP_400_BAD_REQUEST)

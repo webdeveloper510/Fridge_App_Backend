@@ -6,7 +6,9 @@ from django.utils.encoding import smart_str,force_bytes,DjangoUnicodeDecodeError
 from authapp.utils import Util
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
+    dob=serializers.DateField()
     class Meta:
+        
         model=User
         fields=['id','Firstname','Lastname','phone_number','dob','email','password']
 
@@ -20,17 +22,22 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'password': {'error_messages': {'required': "password is required",'blank':'please Enter a password'}},
           }
         
-    def create(self, validated_data,):
-       user=User.objects.create(
-       email=validated_data['email'],
-       Firstname=validated_data['Firstname'],
-       Lastname=validated_data['Lastname'],
-       dob=validated_data['dob'],
-       phone_number=validated_data['phone_number'],)
-       user.set_password(validated_data['password']) 
-       user.save()
-       return user
-    
+    def create(self, validated_data):
+        user = User.objects.create(
+            email=validated_data['email'],
+            Firstname=validated_data['Firstname'],
+            Lastname=validated_data['Lastname'],
+            dob=validated_data['dob'],
+            phone_number=validated_data['phone_number'],
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
+
+
+
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
